@@ -11,7 +11,12 @@ Phase 1 API foundation: Express REST API, PostgreSQL/Prisma persistence, JWT adm
 
 ## Routes
 - GET /api/health
-- POST /api/auth/login\n- POST /api/ai/scenarios (AI-assisted browser-executable scenario generation)\n- GET /api/projects/:projectId/scenarios\n- POST /api/projects/:projectId/scenarios\n- PATCH /api/projects/:projectId/scenarios/:scenarioId/status\n- POST /api/test-runs/scenarios/:scenarioId (approved scenario execution; body: websiteId)
+- POST /api/auth/login
+- POST /api/ai/scenarios (AI-assisted browser-executable scenario generation)
+- GET /api/projects/:projectId/scenarios
+- POST /api/projects/:projectId/scenarios
+- PATCH /api/projects/:projectId/scenarios/:scenarioId/status
+- POST /api/test-runs/scenarios/:scenarioId (approved scenario execution; body: websiteId)
 - GET/POST /api/projects
 - GET /api/projects/:id
 - GET/POST /api/projects/:projectId/websites
