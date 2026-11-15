@@ -33,7 +33,7 @@ export async function runScenarioTest(rawUrl,scenario){
    switch(action.type){
     case "navigate":{
      if(typeof action.path!=="string"||!action.path.startsWith("/")||action.path.startsWith("//"))throw new Error("Navigation must use a same-site relative path");
-     await page.goto(new URL(action.path,origin).toString(),{waitUntil:"domcontentloaded",timeout:20000});break;
+     response=await page.goto(new URL(action.path,origin).toString(),{waitUntil:"domcontentloaded",timeout:20000});if(response&&response.status()>=400)throw new Error("Navigation returned HTTP "+response.status());break;
     }
     case "click":await target.click({timeout:8000});break;
     case "fill":await target.fill(String(action.value??""),{timeout:8000});break;
