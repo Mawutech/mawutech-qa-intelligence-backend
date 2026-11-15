@@ -43,6 +43,8 @@ model TestRun {
   consoleErrors  Json?
   pageErrors     Json?
   failureMessage String?
+  completedSteps Int?
+  totalSteps     Int?
   createdAt      DateTime @default(now())
 
   @@index([websiteId, createdAt])
@@ -61,6 +63,7 @@ model TestScenario {
   status          String   @default("draft")
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  testRuns        TestRun[]
 
   @@index([projectId, createdAt])
 }
