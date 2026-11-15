@@ -1,5 +1,6 @@
 import {chromium} from "playwright";
 import {validateTestUrl,assertPublicHost} from "./url-safety.js";
+import {uploadScreenshot} from "./evidence-storage.js";
 export async function runSmokeTest(raw){
   const url=validateTestUrl(raw);
   await assertPublicHost(url);
@@ -19,8 +20,10 @@ export async function runSmokeTest(raw){
       }catch{return await route.abort();}
     });
     response=await page.goto(url,{waitUntil:"domcontentloaded",timeout:30000});
-    return {status:response&&response.status()<400&&pageErrors.length===0?"passed":"failed",title:await page.title(),finalUrl:page.url(),httpStatus:response?.status()??null,durationMs:Date.now()-started,consoleErrors:consoleErrors.slice(0,50),pageErrors:pageErrors.slice(0,50),failureMessage:response&&response.status()>=400?`HTTP ${response.status()}`:null};
+    const screenshotUrl=await uploadScreenshot(await page.screenshot({type:"png",fullPage:true,animations:"disabled"}),"smoke-"+Date.now());
+    return {status:response&&response.status()<400&&pageErrors.length===0?"passed":"failed",title:await page.title(),finalUrl:page.url(),httpStatus:response?.status()??null,durationMs:Date.now()-started,consoleErrors:consoleErrors.slice(0,50),pageErrors:pageErrors.slice(0,50),failureMessage:response&&response.status()>=400?`HTTP ${response.status()}`:null,screenshotUrl};
   }catch(e){
-    return {status:"failed",title:null,finalUrl:page.url(),httpStatus:response?.status()??null,durationMs:Date.now()-started,consoleErrors:consoleErrors.slice(0,50),pageErrors:pageErrors.slice(0,50),failureMessage:e.message.slice(0,1000)};
+    const screenshotUrl=await page.screenshot({type:"png",fullPage:true,animations:"disabled"}).then(b=>uploadScreenshot(b,"smoke-failed-"+Date.now())).catch(()=>null);
+    return {status:"failed",title:null,finalUrl:page.url(),httpStatus:response?.status()??null,durationMs:Date.now()-started,consoleErrors:consoleErrors.slice(0,50),pageErrors:pageErrors.slice(0,50),failureMessage:e.message.slice(0,1000),screenshotUrl};
   }finally{await browser.close();}
 }
