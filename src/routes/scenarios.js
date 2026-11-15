@@ -8,7 +8,8 @@ const scenario=z.object({
   category:z.enum(["authentication","authorization","functional","validation","workflow","usability","accessibility","data-integrity"]),
   preconditions:z.array(z.string().min(1).max(300)).max(8),
   steps:z.array(z.string().min(1).max(500)).min(1).max(12),
-  expectedResults:z.array(z.string().min(1).max(500)).min(1).max(12)
+  expectedResults:z.array(z.string().min(1).max(500)).min(1).max(12),
+  actions:z.array(z.unknown()).min(1).max(30)
 });
 r.get("/",async(req,res)=>{
   const project=await prisma.project.findUnique({where:{id:req.params.projectId},select:{id:true}});
