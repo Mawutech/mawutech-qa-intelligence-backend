@@ -1,0 +1,3 @@
+import jwt from "jsonwebtoken";
+export function requireAuth(req,res,next){const token=req.headers.authorization?.startsWith("Bearer ")?req.headers.authorization.slice(7):null;if(!token)return res.status(401).json({error:"Authentication required"});try{req.user=jwt.verify(token,process.env.JWT_SECRET);next();}catch{return res.status(401).json({error:"Invalid or expired token"});}}
+export function errorHandler(err,req,res,next){if(res.headersSent)return next(err);const status=Number(err.status)||500;if(status>=500)console.error(err);res.status(status).json({error:status>=500?"Internal server error":err.message});}
