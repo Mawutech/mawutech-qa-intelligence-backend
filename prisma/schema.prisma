@@ -1,0 +1,5 @@
+generator client { provider = "prisma-client-js" }
+datasource db { provider = "postgresql" url = env("DATABASE_URL") }
+model Project { id String @id @default(cuid()) name String description String? websites Website[] createdAt DateTime @default(now()) updatedAt DateTime @updatedAt }
+model Website { id String @id @default(cuid()) name String baseUrl String projectId String project Project @relation(fields:[projectId], references:[id], onDelete:Cascade) testRuns TestRun[] createdAt DateTime @default(now()) @@index([projectId]) }
+model TestRun { id String @id @default(cuid()) websiteId String website Website @relation(fields:[websiteId], references:[id], onDelete:Cascade) status String title String? finalUrl String? httpStatus Int? durationMs Int? consoleErrors Json? pageErrors Json? failureMessage String? createdAt DateTime @default(now()) @@index([websiteId,createdAt]) }
