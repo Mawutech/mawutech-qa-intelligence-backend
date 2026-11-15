@@ -20,7 +20,7 @@ export async function runSmokeTest(raw){
       }catch{return await route.abort();}
     });
     response=await page.goto(url,{waitUntil:"domcontentloaded",timeout:30000});
-    const screenshotUrl=await uploadScreenshot(await page.screenshot({type:"png",fullPage:true,animations:"disabled"}),"smoke-"+Date.now());
+    const screenshotUrl=await page.screenshot({type:"png",fullPage:true,animations:"disabled"}).then(b=>uploadScreenshot(b,"smoke-"+Date.now())).catch(()=>null);
     return {status:response&&response.status()<400&&pageErrors.length===0?"passed":"failed",title:await page.title(),finalUrl:page.url(),httpStatus:response?.status()??null,durationMs:Date.now()-started,consoleErrors:consoleErrors.slice(0,50),pageErrors:pageErrors.slice(0,50),failureMessage:response&&response.status()>=400?`HTTP ${response.status()}`:null,screenshotUrl};
   }catch(e){
     const screenshotUrl=await page.screenshot({type:"png",fullPage:true,animations:"disabled"}).then(b=>uploadScreenshot(b,"smoke-failed-"+Date.now())).catch(()=>null);
