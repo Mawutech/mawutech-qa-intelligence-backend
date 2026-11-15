@@ -1,0 +1,3 @@
+import {Router} from "express";import {prisma} from "../lib/prisma.js";import {runSmokeTest} from "../services/smoke-test.js";
+const r=Router();r.get("/",async(req,res)=>res.json({runs:await prisma.testRun.findMany({include:{website:{select:{id:true,name:true,baseUrl:true,projectId:true}}},orderBy:{createdAt:"desc"},take:100})}));
+r.post("/:websiteId",async(req,res)=>{const website=await prisma.website.findUnique({where:{id:req.params.websiteId}});if(!website)return res.status(404).json({error:"Website not found"});let result;try{result=await runSmokeTest(website.baseUrl);}catch(e){return res.status(e.status||500).json({error:e.message});}const run=await prisma.testRun.create({data:{websiteId:website.id,...result}});res.status(201).json({run});});export default r;
