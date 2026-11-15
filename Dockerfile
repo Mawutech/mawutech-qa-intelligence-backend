@@ -4,8 +4,8 @@ ENV NODE_ENV=production \
     PORT=4000 \
     PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1
 COPY package.json ./
-RUN npm install --include=dev
 COPY prisma ./prisma
+RUN npm install --include=dev
 RUN npx prisma generate
 COPY . .
 EXPOSE 4000
