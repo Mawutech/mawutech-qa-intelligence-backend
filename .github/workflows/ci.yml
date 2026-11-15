@@ -39,3 +39,5 @@ jobs:
       - run: npm test
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/mqi?schema=public
+      - name: Build production Docker image
+        run: docker build -t mqi-backend:ci .
