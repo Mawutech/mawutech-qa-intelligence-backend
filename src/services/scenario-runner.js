@@ -48,7 +48,7 @@ export async function runScenarioTest(rawUrl,scenario){
    }
    completed++;
   }
-  const screenshotUrl=await uploadScreenshot(await page.screenshot({type:"png",fullPage:true,animations:"disabled"}),"scenario-"+Date.now());
+  const screenshotUrl=await page.screenshot({type:"png",fullPage:true,animations:"disabled"}).then(b=>uploadScreenshot(b,"scenario-"+Date.now())).catch(()=>null);
   return {status:"passed",title:await page.title(),finalUrl:page.url(),httpStatus:response?.status()??null,durationMs:Date.now()-started,consoleErrors,pageErrors,failureMessage:null,completedSteps:completed,totalSteps:scenario.actions.length,screenshotUrl};
  }catch(error){
   failureMessage=error.message.slice(0,1000);
