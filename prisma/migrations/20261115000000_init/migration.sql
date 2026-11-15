@@ -41,6 +41,7 @@ CREATE TABLE "TestRun" (
   "consoleErrors" JSONB,
   "pageErrors" JSONB,
   "failureMessage" TEXT,
+  "screenshotUrl" TEXT,
   "completedSteps" INTEGER,
   "totalSteps" INTEGER,
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
