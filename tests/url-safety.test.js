@@ -1,9 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {validateTestUrl} from "../src/services/url-safety.js";
+import {validateTestUrl,assertPublicHost} from "../src/services/url-safety.js";
 process.env.TEST_ALLOWED_HOSTS="qa.example.com,staging.example.org";
 test("allows an exact authorized HTTPS hostname",()=>{assert.equal(validateTestUrl("https://qa.example.com/path"),"https://qa.example.com/path");});
 test("rejects hostnames not in the allowlist",()=>{assert.throws(()=>validateTestUrl("https://evil.example.com"),/not in TEST_ALLOWED_HOSTS/);});
 test("rejects localhost and local suffixes",()=>{assert.throws(()=>validateTestUrl("http://localhost"),/Local\/private/);assert.throws(()=>validateTestUrl("http://printer.local"),/Local\/private/);});
-test("rejects private IP literals",()=>{assert.throws(()=>validateTestUrl("http://192.168.1.10"),/Local\/private/);assert.throws(()=>validateTestUrl("http://10.0.0.2"),/Local\/private/);});
+test("rejects private IPv4 and IPv6 literals",()=>{for(const host of ["192.168.1.10","10.0.0.2","127.0.0.1","169.254.1.1","[::1]","[fc00::1]"])assert.throws(()=>validateTestUrl("http://"+host),/Local\/private/);});
 test("rejects non HTTP protocols and embedded credentials",()=>{assert.throws(()=>validateTestUrl("file:///etc/passwd"),/HTTP\(S\)/);assert.throws(()=>validateTestUrl("https://user:pass@qa.example.com"),/HTTP\(S\)/);});
+test("allows DNS names only when all resolved addresses are public",async()=>{await assertPublicHost("https://qa.example.com",async()=>[{address:"93.184.216.34",family:4}]);});
+test("blocks DNS names resolving to private addresses",async()=>{await assert.rejects(()=>assertPublicHost("https://qa.example.com",async()=>[{address:"93.184.216.34",family:4},{address:"10.1.2.3",family:4}]),/private network/);});
+test("blocks DNS resolution failures",async()=>{await assert.rejects(()=>assertPublicHost("https://qa.example.com",async()=>{throw new Error("dns failed");}),/could not be resolved/);});
