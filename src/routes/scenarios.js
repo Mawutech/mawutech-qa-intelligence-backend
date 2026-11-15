@@ -1,7 +1,7 @@
 import {Router} from "express";
 import {z} from "zod";
 import {prisma} from "../lib/prisma.js";
-const r=Router();
+const r=Router({mergeParams:true});
 const locator=z.object({by:z.enum(["role","label","placeholder","text","testId","css"]),value:z.string().min(1).max(300),role:z.string().max(60).optional()});
 const action=z.discriminatedUnion("type",[
  z.object({type:z.literal("navigate"),path:z.string().startsWith("/").max(500)}),
