@@ -23,6 +23,7 @@ CREATE TABLE "TestScenario" (
   "preconditions" JSONB NOT NULL,
   "steps" JSONB NOT NULL,
   "expectedResults" JSONB NOT NULL,
+  "actions" JSONB NOT NULL,
   "status" TEXT NOT NULL DEFAULT 'draft',
   "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updatedAt" TIMESTAMP(3) NOT NULL,
