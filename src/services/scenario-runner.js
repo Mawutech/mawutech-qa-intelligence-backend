@@ -1,5 +1,6 @@
 import {chromium} from "playwright";
 import {validateTestUrl,assertPublicHost} from "./url-safety.js";
+import {uploadScreenshot} from "./evidence-storage.js";
 function resolveLocator(page,spec){
  const {by,value,role}=spec;
  if(by==="role"){if(!role)throw new Error("Role locator requires a role name");return page.getByRole(role,{name:value});}
@@ -47,9 +48,11 @@ export async function runScenarioTest(rawUrl,scenario){
    }
    completed++;
   }
-  return {status:"passed",title:await page.title(),finalUrl:page.url(),httpStatus:response?.status()??null,durationMs:Date.now()-started,consoleErrors,pageErrors,failureMessage:null,completedSteps:completed,totalSteps:scenario.actions.length};
+  const screenshotUrl=await uploadScreenshot(await page.screenshot({type:"png",fullPage:true,animations:"disabled"}),"scenario-"+Date.now());
+  return {status:"passed",title:await page.title(),finalUrl:page.url(),httpStatus:response?.status()??null,durationMs:Date.now()-started,consoleErrors,pageErrors,failureMessage:null,completedSteps:completed,totalSteps:scenario.actions.length,screenshotUrl};
  }catch(error){
   failureMessage=error.message.slice(0,1000);
-  return {status:"failed",title:await page.title().catch(()=>null),finalUrl:page.url(),httpStatus:response?.status()??null,durationMs:Date.now()-started,consoleErrors,pageErrors,failureMessage,completedSteps:completed,totalSteps:scenario.actions.length};
+  const screenshotUrl=await page.screenshot({type:"png",fullPage:true,animations:"disabled"}).then(b=>uploadScreenshot(b,"scenario-failed-"+Date.now())).catch(()=>null);
+  return {status:"failed",title:await page.title().catch(()=>null),finalUrl:page.url(),httpStatus:response?.status()??null,durationMs:Date.now()-started,consoleErrors,pageErrors,failureMessage,completedSteps:completed,totalSteps:scenario.actions.length,screenshotUrl};
  }finally{await browser.close();}
 }
