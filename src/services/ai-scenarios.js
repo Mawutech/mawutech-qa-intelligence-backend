@@ -1,12 +1,12 @@
 import {z} from "zod";
 const locator=z.object({by:z.enum(["role","label","placeholder","text","testId","css"]),value:z.string().min(1).max(300),role:z.string().max(60).optional()});
 const action=z.discriminatedUnion("type",[
- z.object({type:z.literal("navigate"),path:z.string().startsWith("/").max(500)}),
+ z.object({type:z.literal("navigate"),path:z.string().startsWith("/").max(500).refine(value=>!value.startsWith("//"))}),
  z.object({type:z.enum(["click","check","uncheck","expectVisible"]),locator}),
  z.object({type:z.literal("fill"),locator,value:z.string().max(1000)}),
  z.object({type:z.literal("selectOption"),locator,value:z.string().max(200)}),
  z.object({type:z.literal("expectText"),locator,value:z.string().max(500)}),
- z.object({type:z.literal("expectUrl"),value:z.string().startsWith("/").max(500)})
+ z.object({type:z.literal("expectUrl"),value:z.string().startsWith("/").max(500).refine(value=>!value.startsWith("//"))})
 ]);
 const scenarioSchema=z.object({
  title:z.string().min(4).max(160),
