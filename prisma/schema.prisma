@@ -33,6 +33,8 @@ model TestRun {
   id             String   @id @default(cuid())
   websiteId      String
   website        Website  @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  scenarioId     String?
+  scenario        TestScenario? @relation(fields: [scenarioId], references: [id], onDelete: SetNull)
   status         String
   title          String?
   finalUrl       String?
