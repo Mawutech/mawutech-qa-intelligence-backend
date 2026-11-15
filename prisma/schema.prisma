@@ -43,6 +43,7 @@ model TestRun {
   consoleErrors  Json?
   pageErrors     Json?
   failureMessage String?
+  screenshotUrl   String?
   completedSteps Int?
   totalSteps     Int?
   createdAt      DateTime @default(now())
