@@ -39,7 +39,31 @@ export async function generateScenarios({description,roles=[],workflows=[]}){
  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),45000);
  try{
   const response=await fetch("https://api.openai.com/v1/responses",{method:"POST",signal:controller.signal,headers:{"Authorization":`Bearer ${key}`,"Content-Type":"application/json"},body:JSON.stringify({model,input,max_output_tokens:5000})});
-  if(!response.ok){const data=await response.json().catch(()=>({}));const status=response.status===429?429:502;throw Object.assign(new Error(status===429?"AI service rate limit reached. Please retry shortly.":"AI scenario generation failed. Check the backend AI configuration."),{status,providerStatus:response.status,providerError:data.error?.code||data.error?.type});}
+  if(!response.ok){
+   const data=await response.json().catch(()=>({}));
+   const providerCode=data.error?.code||data.error?.type||"unknown";
+   const requestId=response.headers.get("x-request-id")||undefined;
+   if(response.status===429){
+    console.warn("OpenAI scenario-generation request rejected",{
+     status:response.status,
+     code:providerCode,
+     type:data.error?.type||undefined,
+     requestId,
+     retryAfter:response.headers.get("retry-after")||undefined
+    });
+    const messages={
+     rate_limit_exceeded:"OpenAI request/token rate limit reached. Wait for the rate-limit window to reset, then try again.",
+     slow_down:"OpenAI is asking this project to slow down. Wait before retrying.",
+     insufficient_quota:"OpenAI API quota or credits are exhausted. Check API billing and usage limits.",
+     credit_balance_exhausted:"OpenAI API prepaid credits are exhausted. Add API credits before retrying.",
+     organization_spend_limit_exceeded:"The OpenAI organization spend limit has been reached. Review the organization billing limits.",
+     project_spend_limit_exceeded:"The OpenAI project spend limit has been reached. Review the project billing limits.",
+     organization_usage_limit_exceeded:"The OpenAI organization usage limit has been reached. Review the approved usage limit."
+    };
+    throw Object.assign(new Error(messages[providerCode]||`OpenAI rejected the request with HTTP 429 (code: ${providerCode}). Check API usage, billing, and rate limits.`),{status:429,providerStatus:response.status,providerError:providerCode});
+   }
+   throw Object.assign(new Error("AI scenario generation failed. Check the backend AI configuration."),{status:502,providerStatus:response.status,providerError:providerCode});
+  }
   const data=await response.json();const output=data.output?.flatMap(item=>item.content||[]).filter(part=>part.type==="output_text").map(part=>part.text).join("\n")||"";
   if(!output)throw Object.assign(new Error("AI returned an empty response."),{status:502});
   return parseScenarioResponse(output);
