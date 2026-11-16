@@ -25,47 +25,41 @@ export function parseScenarioResponse(text){
  return parsed.data;
 }
 export async function generateScenarios({description,roles=[],workflows=[]}){
- const key=process.env.OPENAI_API_KEY;
- if(!key)throw Object.assign(new Error("AI scenario generation is not configured. Add OPENAI_API_KEY to the backend environment."),{status:503});
- const model=process.env.OPENAI_MODEL||"gpt-6-luna";
- const input=[
+ const key=process.env.GEMINI_API_KEY;
+ if(!key)throw Object.assign(new Error("AI scenario generation is not configured. Add GEMINI_API_KEY to the backend environment."),{status:503});
+ const model=process.env.GEMINI_MODEL||"gemini-3.8-flash";
+ const prompt=[
  "Create practical browser-executable QA scenarios for a website the user owns or is authorized to test.",
  "Return only JSON with a top-level scenarios array. Every scenario must have title, priority (critical/high/medium/low), category (authentication/authorization/functional/validation/workflow/usability/accessibility/data-integrity), preconditions (string array), steps (string array), expectedResults (string array), and actions (array).",
  "Each action must be one of these exact shapes: {type:'navigate',path:'/relative/path'}; {type:'click'|'check'|'uncheck'|'expectVisible',locator:{by:'role'|'label'|'placeholder'|'text'|'testId'|'css',value:'...',role:'optional role name'}}; {type:'fill',locator:{...},value:'...'}; {type:'selectOption',locator:{...},value:'...'}; {type:'expectText',locator:{...},value:'...'}; {type:'expectUrl',value:'/relative/path'}.",
  "Never use absolute URLs, JavaScript, eval, arbitrary browser code, file access, destructive actions, or external domains. Only use relative paths and user-facing accessible locators. Prefer role/label/testId. If selectors or paths are unknown, state assumptions and use reasonable accessible labels. Do not invent credentials; use placeholder values like qa.user@example.test and TEST_PASSWORD.",
  "Include positive and negative cases, validation and permission boundaries. Do not propose destructive tests against production.",
+ "Use synthetic example data only. Never request or reproduce real student personal data, passwords, or other sensitive information.",
  JSON.stringify({description,roles,workflows})
  ].join("\n\n");
  const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),45000);
  try{
-  const response=await fetch("https://api.openai.com/v1/responses",{method:"POST",signal:controller.signal,headers:{"Authorization":`Bearer ${key}`,"Content-Type":"application/json"},body:JSON.stringify({model,input,max_output_tokens:5000})});
+  const response=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`,{
+   method:"POST",
+   signal:controller.signal,
+   headers:{"x-goog-api-key":key,"Content-Type":"application/json"},
+   body:JSON.stringify({
+    contents:[{role:"user",parts:[{text:prompt}]}],
+    generationConfig:{responseMimeType:"application/json",maxOutputTokens:5000,temperature:0.2}
+   })
+  });
   if(!response.ok){
    const data=await response.json().catch(()=>({}));
-   const providerCode=data.error?.code||data.error?.type||"unknown";
-   const requestId=response.headers.get("x-request-id")||undefined;
-   if(response.status===429){
-    console.warn("OpenAI scenario-generation request rejected",{
-     status:response.status,
-     code:providerCode,
-     type:data.error?.type||undefined,
-     requestId,
-     retryAfter:response.headers.get("retry-after")||undefined
-    });
-    const messages={
-     rate_limit_exceeded:"OpenAI request/token rate limit reached. Wait for the rate-limit window to reset, then try again.",
-     slow_down:"OpenAI is asking this project to slow down. Wait before retrying.",
-     insufficient_quota:"OpenAI API quota or credits are exhausted. Check API billing and usage limits.",
-     credit_balance_exhausted:"OpenAI API prepaid credits are exhausted. Add API credits before retrying.",
-     organization_spend_limit_exceeded:"The OpenAI organization spend limit has been reached. Review the organization billing limits.",
-     project_spend_limit_exceeded:"The OpenAI project spend limit has been reached. Review the project billing limits.",
-     organization_usage_limit_exceeded:"The OpenAI organization usage limit has been reached. Review the approved usage limit."
-    };
-    throw Object.assign(new Error(messages[providerCode]||`OpenAI rejected the request with HTTP 429 (code: ${providerCode}). Check API usage, billing, and rate limits.`),{status:429,providerStatus:response.status,providerError:providerCode});
-   }
-   throw Object.assign(new Error("AI scenario generation failed. Check the backend AI configuration."),{status:502,providerStatus:response.status,providerError:providerCode});
+   const providerCode=data.error?.status||data.error?.code||"unknown";
+   console.warn("Gemini scenario-generation request rejected",{status:response.status,code:providerCode});
+   if(response.status===429)throw Object.assign(new Error("Gemini free-tier rate limit reached. Wait for the quota window to reset, then try again."),{status:429,providerStatus:response.status,providerError:providerCode});
+   if(response.status===400)throw Object.assign(new Error("Gemini rejected the scenario request. Check the model setting and prompt, then retry."),{status:502,providerStatus:response.status,providerError:providerCode});
+   if(response.status===401||response.status===403)throw Object.assign(new Error("Gemini API key is invalid or does not have permission. Check GEMINI_API_KEY in the backend environment."),{status:503,providerStatus:response.status,providerError:providerCode});
+   throw Object.assign(new Error("Gemini scenario generation failed. Check the Gemini API configuration and service status."),{status:502,providerStatus:response.status,providerError:providerCode});
   }
-  const data=await response.json();const output=data.output?.flatMap(item=>item.content||[]).filter(part=>part.type==="output_text").map(part=>part.text).join("\n")||"";
-  if(!output)throw Object.assign(new Error("AI returned an empty response."),{status:502});
+  const data=await response.json();
+  const output=data.candidates?.[0]?.content?.parts?.map(part=>part.text||"").join("\n")||"";
+  if(!output)throw Object.assign(new Error("Gemini returned an empty response. Try simplifying the request."),{status:502});
   return parseScenarioResponse(output);
  }catch(error){if(error.name==="AbortError")throw Object.assign(new Error("AI request timed out. Please try again."),{status:504});throw error;}
  finally{clearTimeout(timeout);}
