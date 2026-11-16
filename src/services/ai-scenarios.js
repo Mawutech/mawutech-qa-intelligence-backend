@@ -27,7 +27,7 @@ export function parseScenarioResponse(text){
 export async function generateScenarios({description,roles=[],workflows=[]}){
  const key=process.env.GEMINI_API_KEY;
  if(!key)throw Object.assign(new Error("AI scenario generation is not configured. Add GEMINI_API_KEY to the backend environment."),{status:503});
- const model=process.env.GEMINI_MODEL||"gemini-3.8-flash";
+ const model=process.env.GEMINI_MODEL||"gemini-2.5-flash-lite";
  const prompt=[
  "Create practical browser-executable QA scenarios for a website the user owns or is authorized to test.",
  "Return only JSON with a top-level scenarios array. Every scenario must have title, priority (critical/high/medium/low), category (authentication/authorization/functional/validation/workflow/usability/accessibility/data-integrity), preconditions (string array), steps (string array), expectedResults (string array), and actions (array).",
