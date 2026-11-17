@@ -1,0 +1,10 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {parseScenarioResponse} from "../src/services/ai-scenarios.js";
+const good={scenarios:[{title:"Reject invalid password",priority:"high",category:"authentication",preconditions:["A registered test user exists"],steps:["Open the sign-in page","Enter an invalid password","Submit the form"],expectedResults:["Access is denied","A safe error message is shown"],actions:[{type:"navigate",path:"/login"},{type:"fill",locator:{by:"label",value:"Email"},value:"qa.user@example.test"},{type:"fill",locator:{by:"label",value:"Password"},value:"wrong-password"},{type:"click",locator:{by:"role",role:"button",value:"Sign in"}},{type:"expectVisible",locator:{by:"text",value:"Invalid credentials"}}]}]};
+test("accepts valid scenarios with safe browser actions",()=>{assert.deepEqual(parseScenarioResponse(JSON.stringify(good)),good);});
+test("rejects invalid JSON",()=>{assert.throws(()=>parseScenarioResponse("not json"),/invalid structured content/);});
+test("rejects missing required scenario fields",()=>{assert.throws(()=>parseScenarioResponse(JSON.stringify({scenarios:[{title:"Missing fields"}]})),/did not match/);});
+test("rejects an empty scenario list",()=>{assert.throws(()=>parseScenarioResponse(JSON.stringify({scenarios:[]})),/did not match/);});
+test("rejects unsupported action types",()=>{const bad=structuredClone(good);bad.scenarios[0].actions[0]={type:"evaluate",code:"alert(1)"};assert.throws(()=>parseScenarioResponse(JSON.stringify(bad)),/did not match/);});
+test("rejects absolute or protocol-relative navigation",()=>{for(const path of ["https://evil.example","//evil.example"]) {const bad=structuredClone(good);bad.scenarios[0].actions[0]={type:"navigate",path};assert.throws(()=>parseScenarioResponse(JSON.stringify(bad)),/did not match/);}});

@@ -1,0 +1,1 @@
+import bcrypt from "bcryptjs";const p=process.argv[2];if(!p||p.length<12){console.error("Provide a password of at least 12 characters");process.exit(1);}console.log(await bcrypt.hash(p,12));

@@ -1,0 +1,5 @@
+import {Router} from "express";import {z} from "zod";import {prisma} from "../lib/prisma.js";
+const r=Router(),schema=z.object({name:z.string().trim().min(2).max(100),description:z.string().trim().max(500).optional()});
+r.get("/",async(req,res)=>res.json({projects:await prisma.project.findMany({include:{websites:{orderBy:{createdAt:"desc"}},_count:{select:{websites:true}}},orderBy:{createdAt:"desc"}})}));
+r.post("/",async(req,res)=>{const p=schema.safeParse(req.body);if(!p.success)return res.status(400).json({error:"Invalid project data",details:p.error.flatten()});res.status(201).json({project:await prisma.project.create({data:p.data})});});
+r.get("/:id",async(req,res)=>{const project=await prisma.project.findUnique({where:{id:req.params.id},include:{websites:true}});if(!project)return res.status(404).json({error:"Project not found"});res.json({project});});export default r;
